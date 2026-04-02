@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoteMatch – Find Your Political Alignment</title>
+<meta name="description" content="Discover which UK political party best represents your views. Free, anonymous, nonpartisan survey.">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #06071a;
+  --surface: rgba(255,255,255,0.05);
+  --surface-hover: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.1);
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #475569;
+  --primary: #6366f1;
+  --primary-light: #a5b4fc;
+  --accent: #8b5cf6;
+  --success: #10b981;
+  --r-sm: 8px;
+  --r: 16px;
+  --r-lg: 24px;
+  --ease: 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+html, body { height: 100%; overflow-x: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── ANIMATED BACKGROUND ── */
+.bg-orbs { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: drift linear infinite; }
+.orb-1 { width: 700px; height: 700px; background: radial-gradient(circle, #4338ca 0%, transparent 70%); top: -250px; left: -250px; animation-duration: 28s; }
+.orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #7c3aed 0%, transparent 70%); bottom: -150px; right: -150px; animation-duration: 32s; animation-delay: -12s; }
+.orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #0284c7 0%, transparent 70%); top: 40%; left: 55%; animation-duration: 22s; animation-delay: -6s; }
+@keyframes drift {
+  0%   { transform: translate(0,0) scale(1); }
+  33%  { transform: translate(25px,-25px) scale(1.04); }
+  66%  { transform: translate(-15px,15px) scale(0.96); }
+  100% { transform: translate(0,0) scale(1); }
+}
+
+/* ── SCREENS ── */
+.screen { display: none; position: relative; z-index: 1; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── GLASS ── */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+/* ── LOGO ── */
+.logo {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.1rem;
+}
+
+/* ══════════════════ LANDING ══════════════════ */
+#screen-landing { padding: 0; }
+
+.landing-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 2.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.nav-badge {
+  font-size: 0.78rem; color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem; border-radius: 100px;
+}
+
+.hero-section {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 4rem 2rem 3rem;
+}
+.hero-inner { max-width: 680px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.28);
+  border-radius: 100px;
+  padding: 0.35rem 1rem;
+  font-size: 0.82rem; color: var(--primary-light);
+  margin-bottom: 1.75rem;
+}
+
+.hero-title {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 800; line-height: 1.08; letter-spacing: -0.03em;
+  margin-bottom: 1.25rem;
+}
+.hero-title .grad {
+  background: linear-gradient(135deg, var(--primary-light), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 1.1rem; color: var(--text-muted);
+  max-width: 500px; margin: 0 auto 2.5rem;
+  line-height: 1.75;
+}
+
+.cta-row { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 3rem; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; border: none;
+  padding: 0.9rem 2.2rem; border-radius: 100px;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+  transition: var(--ease);
+  box-shadow: 0 4px 28px rgba(99,102,241,0.45);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 36px rgba(99,102,241,0.55); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 0.85rem 1.8rem; border-radius: 100px;
+  font-size: 0.95rem; font-weight: 500; cursor: pointer;
+  transition: var(--ease);
+}
+.btn-ghost:hover { background: var(--surface-hover); color: var(--text); border-color: rgba(255,255,255,0.18); }
+
+.stats-row { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+.stat-item { text-align: center; }
+.stat-val { font-size: 1.5rem; font-weight: 700; }
+.stat-lbl { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+.stat-div { width: 1px; height: 36px; background: var(--border); }
+
+.how-section {
+  padding: 3rem 2.5rem 4rem;
+  max-width: 900px; margin: 0 auto; width: 100%;
+}
+.section-eyebrow {
+  text-align: center; font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-dim); margin-bottom: 2rem;
+}
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
+.step-card {
+  padding: 1.5rem; text-align: left;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--r);
+  transition: var(--ease);
+}
+.step-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.25); }
+.step-num { font-size: 0.7rem; font-weight: 700; color: var(--primary-light); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.step-ico { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+.step-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+.step-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; }
+
+.landing-footer {
+  text-align: center; padding: 1.25rem 2rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.78rem; color: var(--text-dim);
+}
+
+/* ══════════════════ SURVEY ══════════════════ */
+#screen-survey {}
+
+.survey-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 2rem;
+  background: rgba(6,7,26,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: sticky; top: 0; z-index: 10;
+  gap: 1.5rem;
+}
+.progress-wrap { flex: 1; max-width: 420px; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+.progress-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 100px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+.btn-exit {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted); padding: 0.45rem 0.9rem;
+  border-radius: 8px; font-size: 0.82rem; cursor: pointer;
+  transition: var(--ease);
+}
+.btn-exit:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+.survey-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; }
+
+.q-card { width: 100%; max-width: 680px; padding: 2.5rem; }
+@keyframes slideInRight { from { opacity:0; transform:translateX(48px); } to { opacity:1; transform:translateX(0); } }
+@keyframes slideInLeft  { from { opacity:0; transform:translateX(-48px); } to { opacity:1; transform:translateX(0); } }
+@keyframes slideOutLeft  { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(-48px); } }
+@keyframes slideOutRight { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(48px); } }
+.q-card.enter-right { animation: slideInRight 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+.q-card.enter-left  { animation: slideInLeft  0.35s cubic-bezier(0.4,0,0.2,1) both; }
+.q-card.exit-left   { animation: slideOutLeft  0.25s cubic-bezier(0.4,0,0.2,1) both; }
+.q-card.exit-right  { animation: slideOutRight 0.25s cubic-bezier(0.4,0,0.2,1) both; }
+
+.topic-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.28);
+  border-radius: 100px;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.78rem; color: var(--primary-light);
+  margin-bottom: 1.5rem;
+}
+
+.q-text { font-size: clamp(1.05rem, 2.5vw, 1.3rem); font-weight: 600; line-height: 1.5; margin-bottom: 2rem; }
+
+.answers-list { display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 2rem; }
+.answer-btn {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem 1.2rem;
+  background: rgba(255,255,255,0.03);
+  border: 2px solid rgba(255,255,255,0.08);
+  border-radius: 12px; cursor: pointer;
+  transition: var(--ease); text-align: left; width: 100%;
+}
+.answer-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(99,102,241,0.4); transform: translateX(4px); }
+.answer-btn.selected { background: rgba(99,102,241,0.12); border-color: var(--primary); }
+.answer-btn.selected .radio-dot { background: linear-gradient(135deg, var(--primary), var(--accent)); border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.25); }
+.answer-btn.selected .radio-dot::after { opacity: 1; }
+.radio-dot {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+  transition: var(--ease); position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.radio-dot::after {
+  content: '✓'; font-size: 0.65rem; color: #fff; font-weight: 800;
+  opacity: 0; transition: opacity var(--ease);
+}
+.answer-lbl { font-size: 0.95rem; color: var(--text); }
+.answer-btn.selected .answer-lbl { font-weight: 500; }
+
+.q-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+.btn-back {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 0.9rem; cursor: pointer;
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.5rem 0; transition: var(--ease);
+}
+.btn-back:hover { color: var(--text); }
+.btn-back:disabled { opacity: 0; pointer-events: none; }
+.right-actions { display: flex; align-items: center; gap: 0.75rem; }
+.btn-skip {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted); padding: 0.7rem 1.4rem;
+  border-radius: 100px; font-size: 0.88rem; cursor: pointer;
+  transition: var(--ease);
+}
+.btn-skip:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+.btn-next {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; border: none;
+  padding: 0.7rem 1.8rem; border-radius: 100px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: var(--ease);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+}
+.btn-next:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(99,102,241,0.5); }
+.btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ══════════════════ RESULTS ══════════════════ */
+#screen-results { align-items: center; padding: 2rem; }
+
+.results-head { text-align: center; max-width: 600px; width: 100%; margin: 2rem auto 2.5rem; }
+.results-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.28);
+  border-radius: 100px; padding: 0.32rem 0.9rem;
+  font-size: 0.8rem; color: #34d399; margin-bottom: 1.25rem;
+}
+.results-head h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.6rem; }
+.results-head p { color: var(--text-muted); font-size: 0.95rem; }
+
+.winner-card {
+  width: 100%; max-width: 680px;
+  padding: 2.25rem;
+  background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(139,92,246,0.14));
+  border: 1px solid rgba(99,102,241,0.32);
+  border-radius: var(--r-lg);
+  text-align: center;
+  margin-bottom: 1.75rem;
+  position: relative; overflow: hidden;
+}
+.winner-card::before {
+  content: ''; position: absolute; top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%);
+  pointer-events: none;
+}
+.w-eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--primary-light); margin-bottom: 0.4rem; }
+.w-name { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+.w-pct {
+  font-size: 4rem; font-weight: 800; line-height: 1;
+  background: linear-gradient(135deg, var(--primary-light), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 0.6rem;
+}
+.w-desc { font-size: 0.9rem; color: var(--text-muted); }
+
+.all-results { width: 100%; max-width: 680px; margin-bottom: 2rem; }
+.results-eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 1.1rem; }
+
+.party-row {
+  padding: 1.2rem 1.4rem; margin-bottom: 0.65rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--r); cursor: pointer;
+  transition: var(--ease); background: rgba(255,255,255,0.02);
+}
+.party-row:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.25); }
+.party-row.top-row { border-color: rgba(99,102,241,0.35); background: rgba(99,102,241,0.06); }
+.party-row-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+.p-icon { font-size: 1.4rem; width: 32px; text-align: center; flex-shrink: 0; }
+.p-info { flex: 1; min-width: 0; }
+.p-name { font-weight: 600; font-size: 0.9rem; }
+.p-tag { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-pct-val { font-size: 1.1rem; font-weight: 700; flex-shrink: 0; }
+.p-chevron { color: var(--text-dim); font-size: 0.8rem; transition: transform var(--ease); margin-left: 0.4rem; flex-shrink: 0; }
+.party-row.expanded .p-chevron { transform: rotate(180deg); }
+.bar-track { height: 7px; background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 100px; width: 0%; transition: width 1.3s cubic-bezier(0.4,0,0.2,1); }
+
+.p-details {
+  display: none; padding-top: 1.1rem; margin-top: 1.1rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.p-details.open {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px,1fr));
+  gap: 0.6rem;
+  animation: fadeUp 0.3s ease both;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.policy-chip { padding: 0.7rem 0.85rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; }
+.policy-topic { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.25rem; }
+.policy-body { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+
+.result-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 2.5rem; }
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: none; color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 0.8rem 1.8rem; border-radius: 100px;
+  font-size: 0.9rem; font-weight: 500; cursor: pointer;
+  transition: var(--ease);
+}
+.btn-outline:hover { background: var(--surface-hover); color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+.disclaimer {
+  max-width: 620px; width: 100%; text-align: center;
+  font-size: 0.78rem; color: var(--text-dim); line-height: 1.65;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--r);
+  margin-bottom: 2.5rem;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  background: rgba(16,185,129,0.92); color: #fff;
+  padding: 0.7rem 1.4rem; border-radius: 100px;
+  font-size: 0.88rem; font-weight: 500;
+  z-index: 999; backdrop-filter: blur(12px);
+  animation: toastIn 0.3s ease, toastOut 0.3s 2.5s ease forwards;
+  white-space: nowrap;
+}
+@keyframes toastIn  { from { opacity:0; transform:translateX(-50%) translateY(12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .landing-nav { padding: 1rem 1.25rem; }
+  .how-section { padding: 2rem 1.25rem 3rem; }
+  .survey-header { padding: 0.9rem 1.1rem; gap: 0.75rem; }
+  .q-card { padding: 1.5rem; }
+  .cta-row { flex-direction: column; align-items: stretch; text-align: center; }
+  .btn-primary, .btn-ghost { justify-content: center; }
+  .stats-row { gap: 1.1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── ORBS ── -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- ══════════════════ LANDING ══════════════════ -->
+<div id="screen-landing" class="screen active">
+  <nav class="landing-nav">
+    <div class="logo"><div class="logo-icon">🗳️</div>VoteMatch</div>
+    <span class="nav-badge">🇬🇧 UK Edition · Nonpartisan</span>
+  </nav>
+
+  <div class="hero-section">
+    <div class="hero-inner">
+      <div class="pill">✦ Free · Anonymous · 5 minutes</div>
+      <h1 class="hero-title">
+        Find out which party<br><span class="grad">truly represents you</span>
+      </h1>
+      <p class="hero-sub">
+        Answer 10 plain-language questions on the issues that matter most—NHS, housing, climate, immigration and more—and see your political alignment instantly.
+      </p>
+      <div class="cta-row">
+        <button class="btn-primary" onclick="startSurvey()">
+          Start Survey
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">
+          How it works ↓
+        </button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-val">5 min</div><div class="stat-lbl">to complete</div></div>
+        <div class="stat-div"></div>
+        <div class="stat-item"><div class="stat-val">10</div><div class="stat-lbl">policy topics</div></div>
+        <div class="stat-div"></div>
+        <div class="stat-item"><div class="stat-val">6</div><div class="stat-lbl">UK parties</div></div>
+        <div class="stat-div"></div>
+        <div class="stat-item"><div class="stat-val">100%</div><div class="stat-lbl">nonpartisan</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="how" class="how-section">
+    <div class="section-eyebrow">How It Works</div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">Step 01</div>
+        <span class="step-ico">💬</span>
+        <h3>Answer Questions</h3>
+        <p>Share your views on 10 key UK policy areas using plain, jargon-free language. Skip any question you're unsure about.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 02</div>
+        <span class="step-ico">⚖️</span>
+        <h3>We Calculate</h3>
+        <p>Our algorithm compares your answers against each party's official manifesto and policy positions.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 03</div>
+        <span class="step-ico">📊</span>
+        <h3>See Your Match</h3>
+        <p>Get a detailed percentage breakdown of your alignment with all major UK parties and explore their platforms.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="landing-footer">
+    VoteMatch is a nonpartisan civic education tool. No personal data collected. We do not endorse any party or candidate.
+  </footer>
+</div>
+
+<!-- ══════════════════ SURVEY ══════════════════ -->
+<div id="screen-survey" class="screen">
+  <header class="survey-header">
+    <div class="logo" style="font-size:1rem;">
+      <div class="logo-icon" style="width:28px;height:28px;font-size:0.85rem;">🗳️</div>
+      VoteMatch
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span id="prog-label">Question 1 of 10</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <button class="btn-exit" onclick="exitSurvey()">✕ Exit</button>
+  </header>
+
+  <div class="survey-body">
+    <div class="q-card glass" id="q-card"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ RESULTS ══════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="results-head">
+    <div class="results-pill">✨ Survey Complete</div>
+    <h1>Your Political Alignment</h1>
+    <p>Based on your answers, here's how you match with each major UK party</p>
+  </div>
+
+  <div id="winner-card" class="winner-card"></div>
+
+  <div id="all-results" class="all-results"></div>
+
+  <div class="result-actions">
+    <button class="btn-primary" onclick="shareResults()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+      Share Results
+    </button>
+    <button class="btn-outline" onclick="retakeSurvey()">↺ Retake Survey</button>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> VoteMatch is a nonpartisan civic education tool. Party positions are derived from publicly available manifestos and policy platforms as of 2024–25. Political positions evolve—always verify the latest platforms before voting. This tool does not endorse any political party or candidate.
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+
+const QUESTIONS = [
+  {
+    id: 1, topic: 'NHS & Healthcare', icon: '🏥',
+    q: 'The government should significantly increase NHS funding to cut waiting times, expand mental health services, and ensure fair pay for healthcare workers.',
+    pos: { labour:2, conservative:0.5, libdem:1.5, green:2, reform:-0.5, snp:2 }
+  },
+  {
+    id: 2, topic: 'Housing & Affordability', icon: '🏠',
+    q: 'The government should build significantly more affordable and social housing, and introduce much stronger protections for private renters.',
+    pos: { labour:2, conservative:0.5, libdem:2, green:1.5, reform:0.5, snp:1.5 }
+  },
+  {
+    id: 3, topic: 'Immigration', icon: '🌍',
+    q: 'The government should significantly reduce overall immigration levels to ease pressure on public services, housing, and wages.',
+    pos: { labour:0.5, conservative:1.5, libdem:-1, green:-1.5, reform:2, snp:-1 }
+  },
+  {
+    id: 4, topic: 'Education', icon: '📚',
+    q: 'University tuition fees should be abolished or significantly reduced, and more funding invested in schools, early years, and teacher pay.',
+    pos: { labour:1, conservative:-0.5, libdem:2, green:2, reform:0, snp:2 }
+  },
+  {
+    id: 5, topic: 'Taxation', icon: '💷',
+    q: 'Wealthy individuals and large corporations should pay significantly more in taxes to fund better public services for everyone.',
+    pos: { labour:2, conservative:-1.5, libdem:1, green:2, reform:-1.5, snp:1.5 }
+  },
+  {
+    id: 6, topic: 'Cost of Living', icon: '🛒',
+    q: 'The government should take strong direct action to reduce the cost of living, including regulating energy prices and expanding financial support for struggling families.',
+    pos: { labour:2, conservative:0.5, libdem:1.5, green:1.5, reform:1, snp:2 }
+  },
+  {
+    id: 7, topic: 'Energy & Climate', icon: '🌱',
+    q: 'The UK should pursue ambitious net-zero carbon targets and invest heavily in renewable energy, even if this means higher short-term costs.',
+    pos: { labour:1.5, conservative:0.5, libdem:2, green:2, reform:-2, snp:2 }
+  },
+  {
+    id: 8, topic: 'Homelessness', icon: '🏘️',
+    q: 'The government should significantly increase funding and introduce new programmes specifically to end rough sleeping and tackle the root causes of homelessness.',
+    pos: { labour:2, conservative:0.5, libdem:1.5, green:2, reform:0.5, snp:1.5 }
+  },
+  {
+    id: 9, topic: 'Jobs & Economy', icon: '💼',
+    q: 'The government should create jobs through major public investment in infrastructure and green industries rather than relying primarily on private sector growth.',
+    pos: { labour:2, conservative:0, libdem:1, green:1.5, reform:-0.5, snp:1.5 }
+  },
+  {
+    id: 10, topic: 'International Relations', icon: '🤝',
+    q: 'The UK should seek much closer ties with the European Union, including pursuing a closer trading relationship and participating in joint European projects.',
+    pos: { labour:1, conservative:-0.5, libdem:2, green:2, reform:-2, snp:2 }
+  }
+];
+
+const PARTIES = {
+  labour: {
+    name: 'Labour', tag: 'Centre-left · Public investment · Workers\' rights', icon: '🌹',
+    gradient: 'linear-gradient(90deg,#dc2626,#b91c1c)',
+    policies: {
+      'NHS & Healthcare': 'Major NHS investment, GP guarantee within 2 weeks, mental health support expansion',
+      'Housing': 'Build 1.5 million homes, reform planning law, strengthen renters\' rights',
+      'Immigration': 'Controlled managed migration, tackle illegal immigration',
+      'Education': 'Free breakfast clubs, tuition fee review, mental health in schools',
+      'Taxation': 'Higher taxes on non-doms and corporations, protect working people',
+      'Cost of Living': 'Energy company windfall tax, household bill support',
+      'Climate & Energy': 'Clean energy by 2030, Great British Energy, 600,000 green jobs',
+      'Homelessness': 'Emergency measures to end rough sleeping, cross-department strategy',
+      'Jobs & Economy': 'Industrial strategy, workers\' rights from day one, national wealth fund',
+      'International': 'Reset UK-EU relations, closer trade ties, reaffirm NATO commitments'
+    }
+  },
+  conservative: {
+    name: 'Conservative', tag: 'Centre-right · Low taxes · National security', icon: '🌳',
+    gradient: 'linear-gradient(90deg,#1d4ed8,#1e40af)',
+    policies: {
+      'NHS & Healthcare': 'NHS Long Term Workforce Plan, reduce waiting lists, expand GP appointments',
+      'Housing': 'Build on brownfield land, first-time buyer support, planning reforms',
+      'Immigration': 'Points-based system, strict entry controls, reduce net migration',
+      'Education': 'National Service for young people, apprenticeships expansion',
+      'Taxation': 'National insurance cuts, no income tax rise pledge',
+      'Cost of Living': 'Fuel duty freeze, reduce energy costs via North Sea drilling',
+      'Climate & Energy': 'Net zero by 2050, expand North Sea oil and gas, phased transition',
+      'Homelessness': 'Rough Sleeping Initiative, focus on substance abuse treatment',
+      'Jobs & Economy': 'Private sector-led growth, free trade deals, deregulation',
+      'International': 'Post-Brexit independence, AUKUS and Five Eyes, reduce foreign aid'
+    }
+  },
+  libdem: {
+    name: 'Liberal Democrats', tag: 'Centre · Pro-EU · Civil liberties', icon: '🔶',
+    gradient: 'linear-gradient(90deg,#d97706,#b45309)',
+    policies: {
+      'NHS & Healthcare': 'Extra £9bn for NHS, 8,000 more GPs, mental health first aid in schools',
+      'Housing': 'Build 380,000 homes/year, community land trusts, abolish no-fault evictions',
+      'Immigration': 'Fair managed legal migration, reform asylum system, family reunion rights',
+      'Education': 'Abolish tuition fees, restore maintenance grants, 3,000 more teachers',
+      'Taxation': '1p income tax increase for NHS, wealth taxes, fairer tech company taxation',
+      'Cost of Living': 'Emergency energy price cap, expand free school meals',
+      'Climate & Energy': '100% clean electricity by 2030, onshore wind, warm homes plan',
+      'Homelessness': 'Prevention-first strategy, 10,000 supported housing places',
+      'Jobs & Economy': 'Green industrial strategy, employee ownership, regional investment banks',
+      'International': 'Rejoin EU single market and customs union, closer European cooperation'
+    }
+  },
+  green: {
+    name: 'Green Party', tag: 'Left-green · Climate emergency · Social justice', icon: '🍃',
+    gradient: 'linear-gradient(90deg,#059669,#047857)',
+    policies: {
+      'NHS & Healthcare': 'NHS fully publicly owned, free prescriptions, dental care for all',
+      'Housing': '150,000 social homes/year, rent controls, land value tax',
+      'Immigration': 'Humane asylum system, no detention centres, fair migration',
+      'Education': 'Abolish tuition fees immediately, restore EMA, fully fund state education',
+      'Taxation': 'Wealth tax on assets over £10m, 60% top rate, financial transaction tax',
+      'Cost of Living': 'Universal basic income pilot, price caps on essentials',
+      'Climate & Energy': 'Net zero by 2040, phase out fossil fuels, invest £100bn in transition',
+      'Homelessness': 'Right to housing in law, end no-fault evictions, massively expand shelters',
+      'Jobs & Economy': 'Green New Deal, four-day week, worker ownership of companies',
+      'International': 'Rejoin EU, end arms exports to human rights violators, increase aid to 1% GDP'
+    }
+  },
+  reform: {
+    name: 'Reform UK', tag: 'Right-wing · Anti-immigration · Low taxes', icon: '⬡',
+    gradient: 'linear-gradient(90deg,#4f46e5,#4338ca)',
+    policies: {
+      'NHS & Healthcare': 'Zero waiting lists via private competition, stop NHS waste, GP reform',
+      'Housing': 'Reduce net migration to cut housing demand, brownfield development only',
+      'Immigration': 'Stop the boats, reduce net migration to near zero, exit ECHR if required',
+      'Education': 'Defund DEI programmes, teach British values, school choice vouchers',
+      'Taxation': 'Raise income tax threshold to £20,000, cut corporation tax, zero inheritance tax',
+      'Cost of Living': 'Scrap net zero levies on bills, cut fuel duty, reduce green subsidies',
+      'Climate & Energy': 'Scrap net zero target, maximise North Sea output, focus on nuclear',
+      'Homelessness': 'British citizens first, increase police presence, work requirements',
+      'Jobs & Economy': 'Slash regulations, cut taxes to stimulate private investment',
+      'International': 'Independent UK foreign policy, reduce foreign aid, renegotiate trade deals'
+    }
+  },
+  snp: {
+    name: 'SNP', tag: 'Scottish independence · Progressive · Pro-EU', icon: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    gradient: 'linear-gradient(90deg,#d97706,#b45309)',
+    policies: {
+      'NHS & Healthcare': 'Protect Scottish NHS, oppose privatisation, invest in healthcare workforce',
+      'Housing': 'Build 110,000 affordable homes by 2032, stronger tenants\' rights',
+      'Immigration': 'Scotland needs more immigration, oppose UK caps, fair asylum system',
+      'Education': 'Free university tuition, invest in Gaelic education, STEM focus',
+      'Taxation': 'Fair progressive taxation, oppose cuts to public services',
+      'Cost of Living': 'Scottish Child Payment, oppose benefit cuts, energy cost support',
+      'Climate & Energy': 'Scotland as renewable energy powerhouse, 100% renewable electricity',
+      'Homelessness': 'Housing First approach, rapid rehousing transition programme',
+      'Jobs & Economy': 'Independence for economic control, green jobs, fair work practices',
+      'International': 'Independence to rejoin EU, pro-UN multilateralism, nuclear disarmament'
+    }
+  }
+};
+
+const OPTS = [
+  { label: 'Strongly Agree',    value:  2 },
+  { label: 'Agree',             value:  1 },
+  { label: 'Neutral / Not sure',value:  0 },
+  { label: 'Disagree',          value: -1 },
+  { label: 'Strongly Disagree', value: -2 }
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let qIdx = 0;
+let answers = {};    // questionId -> value
+let selected = null;
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startSurvey() {
+  qIdx = 0; answers = {}; selected = null;
+  show('screen-survey');
+  renderQ('enter-right');
+}
+
+function retakeSurvey() { startSurvey(); }
+
+function exitSurvey() {
+  if (confirm('Exit the survey? Your progress will be lost.')) show('screen-landing');
+}
+
+// ══════════════════════════════════════════════
+// QUESTION RENDER
+// ══════════════════════════════════════════════
+function renderQ(enterClass = 'enter-right') {
+  const q = QUESTIONS[qIdx];
+  const total = QUESTIONS.length;
+  const pct = Math.round((qIdx / total) * 100);
+
+  document.getElementById('prog-label').textContent = `Question ${qIdx+1} of ${total}`;
+  document.getElementById('prog-pct').textContent = `${pct}%`;
+  document.getElementById('prog-fill').style.width = `${pct}%`;
+
+  selected = answers[q.id] !== undefined ? answers[q.id] : null;
+  const isLast = qIdx === total - 1;
+
+  const card = document.getElementById('q-card');
+  card.className = `q-card glass ${enterClass}`;
+
+  card.innerHTML = `
+    <div class="topic-badge"><span>${q.icon}</span><span>${q.topic}</span></div>
+    <div class="q-text">${q.q}</div>
+    <div class="answers-list">
+      ${OPTS.map(o => `
+        <button class="answer-btn ${selected === o.value ? 'selected' : ''}"
+                onclick="pickAnswer(${o.value},this)">
+          <div class="radio-dot"></div>
+          <span class="answer-lbl">${o.label}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div class="q-actions">
+      <button class="btn-back" onclick="goBack()" ${qIdx === 0 ? 'disabled' : ''}>
+        ← Back
+      </button>
+      <div class="right-actions">
+        <button class="btn-skip" onclick="skip()">Skip</button>
+        <button class="btn-next" id="btn-next" onclick="advance()" ${selected === null ? 'disabled' : ''}>
+          ${isLast ? 'See Results' : 'Next'} →
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function pickAnswer(val, el) {
+  selected = val;
+  document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btn-next').disabled = false;
+}
+
+function advance() {
+  if (selected === null) return;
+  answers[QUESTIONS[qIdx].id] = selected;
+  if (qIdx === QUESTIONS.length - 1) { showResults(); return; }
+  transition('exit-left', () => { qIdx++; renderQ('enter-right'); });
+}
+
+function skip() {
+  delete answers[QUESTIONS[qIdx].id];
+  if (qIdx === QUESTIONS.length - 1) { showResults(); return; }
+  transition('exit-left', () => { qIdx++; renderQ('enter-right'); });
+}
+
+function goBack() {
+  if (qIdx === 0) return;
+  transition('exit-right', () => { qIdx--; renderQ('enter-left'); });
+}
+
+function transition(exitClass, cb) {
+  const card = document.getElementById('q-card');
+  card.classList.add(exitClass);
+  setTimeout(cb, 260);
+}
+
+// ══════════════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════════════
+function calcResults() {
+  const ids = Object.keys(PARTIES);
+  const scores = {};
+  ids.forEach(p => { scores[p] = { sum: 0, n: 0 }; });
+
+  QUESTIONS.forEach(q => {
+    const ua = answers[q.id];
+    if (ua === undefined) return;
+    ids.forEach(p => {
+      scores[p].sum += 1 - Math.abs(ua - q.pos[p]) / 4;
+      scores[p].n++;
+    });
+  });
+
+  return ids.map(p => ({
+    id: p, ...PARTIES[p],
+    pct: scores[p].n > 0 ? Math.round((scores[p].sum / scores[p].n) * 100) : 50
+  })).sort((a,b) => b.pct - a.pct);
+}
+
+function showResults() {
+  const res = calcResults();
+  const w = res[0];
+
+  // Winner card
+  document.getElementById('winner-card').innerHTML = `
+    <div class="w-eyebrow">🏆 Your Top Match</div>
+    <div class="w-name">${w.icon} ${w.name}</div>
+    <div class="w-pct" id="w-pct-num">0%</div>
+    <div class="w-desc">${w.tag}</div>
+  `;
+
+  // All results
+  const el = document.getElementById('all-results');
+  el.innerHTML = `
+    <div class="results-eyebrow">All Party Matches</div>
+    ${res.map((r,i) => `
+      <div class="party-row ${i===0?'top-row':''}" id="row-${r.id}" onclick="togglePolicies('${r.id}')">
+        <div class="party-row-top">
+          <span class="p-icon">${r.icon}</span>
+          <div class="p-info">
+            <div class="p-name">${r.name}</div>
+            <div class="p-tag">${r.tag}</div>
+          </div>
+          <div class="p-pct-val" id="pct-${r.id}">0%</div>
+          <span class="p-chevron">▼</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="bar-${r.id}" style="background:${r.gradient}"></div>
+        </div>
+        <div class="p-details" id="pol-${r.id}">
+          ${Object.entries(r.policies).map(([topic,body]) => `
+            <div class="policy-chip">
+              <div class="policy-topic">${topic}</div>
+              <div class="policy-body">${body}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('')}
+    <p style="font-size:0.75rem;color:var(--text-dim);margin-top:0.6rem;text-align:center;">
+      Click any party to expand their policy positions
+    </p>
+  `;
+
+  show('screen-results');
+
+  // Animate bars + counters
+  setTimeout(() => {
+    res.forEach(r => {
+      const bar = document.getElementById(`bar-${r.id}`);
+      const pctEl = document.getElementById(`pct-${r.id}`);
+      if (bar) bar.style.width = `${r.pct}%`;
+      if (pctEl) countUp(pctEl, r.pct);
+    });
+    countUp(document.getElementById('w-pct-num'), w.pct, true);
+  }, 350);
+}
+
+function countUp(el, target, large = false) {
+  const dur = 1300, fps = 60;
+  const step = target / (dur / (1000 / fps));
+  let cur = 0;
+  const t = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = `${Math.round(cur)}%`;
+    if (cur >= target) clearInterval(t);
+  }, 1000 / fps);
+}
+
+function togglePolicies(id) {
+  const pol = document.getElementById(`pol-${id}`);
+  const row = document.getElementById(`row-${id}`);
+  pol.classList.toggle('open');
+  row.classList.toggle('expanded');
+}
+
+// ══════════════════════════════════════════════
+// SHARE
+// ══════════════════════════════════════════════
+function shareResults() {
+  const res = calcResults();
+  const w = res[0];
+  const text = `I just took the VoteMatch UK survey — my top match is ${w.name} with ${w.pct}% alignment! Find out which party represents your views too.`;
+
+  if (navigator.share) {
+    navigator.share({ title: 'My VoteMatch Results', text, url: location.href }).catch(() => copyFallback(text));
+  } else {
+    copyFallback(text);
+  }
+}
+
+function copyFallback(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'));
+  } else {
+    prompt('Copy your result:', text);
+  }
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+</script>
+</body>
+</html>
